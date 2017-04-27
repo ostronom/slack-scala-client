@@ -5,27 +5,28 @@ import sbtrelease._
 
 object BuildSettings {
   val buildOrganization = "com.github.gilbertw1"
-  val buildVersion      = "0.2.1"
+  val buildVersion = "0.2.1-slackfree"
   val buildScalaVersion = "2.12.1"
   val buildCrossScalaVersions = Seq("2.11.8", "2.12.1")
 
-  val buildSettings = Seq (
-    organization       := buildOrganization,
-    version            := buildVersion,
-    scalaVersion       := buildScalaVersion,
+  val buildSettings = Seq(
+    organization := buildOrganization,
+    version := buildVersion,
+    scalaVersion := buildScalaVersion,
     crossScalaVersions := buildCrossScalaVersions,
-    publishMavenStyle  := true,
-    publishTo          := {
+    publishMavenStyle := true,
+    publishTo := {
       val nexus = "https://oss.sonatype.org/"
       if (isSnapshot.value)
         Some("snapshots" at nexus + "content/repositories/snapshots")
       else
-        Some("releases"  at nexus + "service/local/staging/deploy/maven2")
+        Some("releases" at nexus + "service/local/staging/deploy/maven2")
     },
     publishArtifact in Test := false,
-    pomIncludeRepository := { _ => false },
-    pomExtra := (
-      <url>https://github.com/gilbertw1/slack-scala-client</url>
+    pomIncludeRepository := { _ =>
+      false
+    },
+    pomExtra := (<url>https://github.com/gilbertw1/slack-scala-client</url>
       <licenses>
         <license>
           <name>MIT</name>
@@ -75,10 +76,15 @@ object SlackScalaClient extends Build {
   import Defaults._
 
   lazy val slackScalaClient =
-    Project ("slack-scala-client", file("."))
-      .settings ( buildSettings : _* )
-      .settings ( resolvers ++= Seq(typesafeRepo) )
-      .settings ( libraryDependencies ++= Dependencies.allDependencies )
-      .settings ( scalacOptions ++= Seq("-unchecked", "-deprecation", "-Xlint", "-Xfatal-warnings", "-feature") )
+    Project("slack-scala-client", file("."))
+      .settings(buildSettings: _*)
+      .settings(resolvers ++= Seq(typesafeRepo))
+      .settings(libraryDependencies ++= Dependencies.allDependencies)
+      .settings(
+        scalacOptions ++= Seq("-unchecked",
+                              "-deprecation",
+                              "-Xlint",
+                              "-Xfatal-warnings",
+                              "-feature"))
 
 }

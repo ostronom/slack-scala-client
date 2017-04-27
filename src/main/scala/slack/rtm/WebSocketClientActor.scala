@@ -1,18 +1,25 @@
 package slack.rtm
 
 import java.net.URI
-import scala.collection.mutable.{ Set => MSet }
+import scala.collection.mutable.{Set => MSet}
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.util.{ Try, Success, Failure }
+import scala.util.{Try, Success, Failure}
 
-import akka.actor.{ Actor, ActorRef, ActorRefFactory, ActorLogging, Props, Terminated }
-import akka.{ Done, NotUsed }
+import akka.actor.{
+  Actor,
+  ActorRef,
+  ActorRefFactory,
+  ActorLogging,
+  Props,
+  Terminated
+}
+import akka.{Done, NotUsed}
 import akka.http.scaladsl.Http
-import akka.stream.{ ActorMaterializer, OverflowStrategy }
+import akka.stream.{ActorMaterializer, OverflowStrategy}
 import akka.stream.scaladsl._
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.ws.{ Message, TextMessage, WebSocketRequest }
+import akka.http.scaladsl.model.ws.{Message, TextMessage, WebSocketRequest}
 
 private[rtm] object WebSocketClientActor {
   case class SendWSMessage(message: Message)
@@ -23,18 +30,23 @@ private[rtm] object WebSocketClientActor {
   case object WebSocketClientDisconnected
   case object WebSocketClientConnectFailed
 
-  case class WebSocketConnectSuccess(queue: SourceQueueWithComplete[Message], closed: Future[Done])
+  case class WebSocketConnectSuccess(queue: SourceQueueWithComplete[Message],
+                                     closed: Future[Done])
   case object WebSocketConnectFailure
   case object WebSocketDisconnected
 
-  def apply(url: String, listeners: Seq[ActorRef])(implicit arf: ActorRefFactory): ActorRef = {
+  def apply(url: String, listeners: Seq[ActorRef])(
+      implicit arf: ActorRefFactory): ActorRef = {
     arf.actorOf(Props(new WebSocketClientActor(url, listeners)))
   }
 }
 
 import WebSocketClientActor._
 
-private[rtm] class WebSocketClientActor(url: String, initialListeners: Seq[ActorRef]) extends Actor with ActorLogging {
+private[rtm] class WebSocketClientActor(url: String,
+                                        initialListeners: Seq[ActorRef])
+    extends Actor
+    with ActorLogging {
   implicit val ec = context.dispatcher
   implicit val system = context.system
   implicit val materalizer = ActorMaterializer()
@@ -54,10 +66,12 @@ private[rtm] class WebSocketClientActor(url: String, initialListeners: Seq[Actor
         outboundMessageQueue.get.offer(m)
       }
     case WebSocketConnectSuccess(queue, closed) =>
+      log.warning("[WebsocketClientActor] Connection established")
       outboundMessageQueue = Some(queue)
       closed.onComplete(_ => self ! WebSocketDisconnected)
       sendToListeners(WebSocketClientConnected)
     case WebSocketConnectFailure =>
+      log.warning("[WebsocketClientActor] Connection failed")
       sendToListeners(WebSocketClientConnectFailed)
     case WebSocketDisconnected =>
       log.info("[WebSocketClientActor] WebSocket disconnected.")
@@ -88,20 +102,27 @@ private[rtm] class WebSocketClientActor(url: String, initialListeners: Seq[Actor
       Source.queue[Message](1000, OverflowStrategy.dropHead)
     }
 
-    val flow: Flow[Message, Message, (Future[Done], SourceQueueWithComplete[Message])] =
+    val flow: Flow[Message,
+                   Message,
+                   (Future[Done], SourceQueueWithComplete[Message])] =
       Flow.fromSinkAndSourceMat(messageSink, queueSource)(Keep.both)
 
-    val (upgradeResponse, (closed, messageSourceQueue)) = Http().singleWebSocketRequest(WebSocketRequest(url), flow)
+    val (upgradeResponse, (closed, messageSourceQueue)) =
+      Http().singleWebSocketRequest(WebSocketRequest(url), flow)
 
     upgradeResponse.onComplete {
-      case Success(upgrade) if upgrade.response.status == StatusCodes.SwitchingProtocols =>
+      case Success(upgrade)
+          if upgrade.response.status == StatusCodes.SwitchingProtocols =>
         log.info("[WebSocketClientActor] Web socket connection success")
         self ! WebSocketConnectSuccess(messageSourceQueue, closed)
       case Success(upgrade) =>
-        log.info("[WebSocketClientActor] Web socket connection failed: {}", upgrade.response)
+        log.info("[WebSocketClientActor] Web socket connection failed: {}",
+                 upgrade.response)
         self ! WebSocketConnectFailure
       case Failure(err) =>
-        log.info("[WebSocketClientActor] Web socket connection failed with error: {}", err.getMessage)
+        log.info(
+          "[WebSocketClientActor] Web socket connection failed with error: {}",
+          err.getMessage)
         self ! WebSocketConnectFailure
     }
   }
