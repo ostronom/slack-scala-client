@@ -14,7 +14,7 @@ object Main extends App {
   val client = SlackRtmClient(endpoint, token)
   val selfId = client.state.self.id
 
-  client.onEvent { event =>
+  client.onEvent { event ⇒
     system.log.info("Received new event: {}", event)
   /*
     val mentionedIds = SlackUtil.extractMentionedIds(message.text)

@@ -2,10 +2,12 @@ import sbt._
 import Keys._
 import com.typesafe.sbt.SbtPgp.autoImport._
 import sbtrelease._
+import im.dlg.DialogHouseRules
+import bintray.BintrayPlugin.autoImport._
 
 object BuildSettings {
   val buildOrganization = "com.github.gilbertw1"
-  val buildVersion = "0.2.1-slackfree"
+  val buildVersion = "0.2.2-slackfree"
   val buildScalaVersion = "2.12.1"
   val buildCrossScalaVersions = Seq("2.11.8", "2.12.1")
 
@@ -14,16 +16,12 @@ object BuildSettings {
     version := buildVersion,
     scalaVersion := buildScalaVersion,
     crossScalaVersions := buildCrossScalaVersions,
+    scalacOptions := scalacOptions.value.filterNot(_ == "-Ybackend:GenBCode"),
+    bintrayOrganization := Some("dialog"),
+    bintrayOmitLicense := true,
     publishMavenStyle := true,
-    publishTo := {
-      val nexus = "https://oss.sonatype.org/"
-      if (isSnapshot.value)
-        Some("snapshots" at nexus + "content/repositories/snapshots")
-      else
-        Some("releases" at nexus + "service/local/staging/deploy/maven2")
-    },
     publishArtifact in Test := false,
-    pomIncludeRepository := { _ =>
+    pomIncludeRepository := { _ ⇒
       false
     },
     pomExtra := (<url>https://github.com/gilbertw1/slack-scala-client</url>
@@ -45,7 +43,7 @@ object BuildSettings {
           <url>http://bryangilbert.com</url>
         </developer>
       </developers>)
-  )
+  ) ++ DialogHouseRules.defaultDialogSettings :+ DialogHouseRules.mitLicense
 }
 
 object Resolvers {
@@ -80,11 +78,6 @@ object SlackScalaClient extends Build {
       .settings(buildSettings: _*)
       .settings(resolvers ++= Seq(typesafeRepo))
       .settings(libraryDependencies ++= Dependencies.allDependencies)
-      .settings(
-        scalacOptions ++= Seq("-unchecked",
-                              "-deprecation",
-                              "-Xlint",
-                              "-Xfatal-warnings",
-                              "-feature"))
+      .settings(scalacOptions ++= Seq("-unchecked", "-deprecation", "-Xlint", "-Xfatal-warnings", "-feature"))
 
 }

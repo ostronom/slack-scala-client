@@ -5,9 +5,8 @@ import slack.models._
 import play.api.libs.json._
 
 object RtmState {
-  def apply(initial: RtmStartState): RtmState = {
+  def apply(initial: RtmStartState): RtmState =
     new RtmState(initial)
-  }
 }
 
 class RtmState(start: RtmStartState) {
@@ -27,40 +26,36 @@ class RtmState(start: RtmStartState) {
   def ims: Seq[Im] = _ims
   def bots: Seq[JsValue] = _bots
 
-  def getUserIdForName(name: String): Option[String] = {
+  def getUserIdForName(name: String): Option[String] =
     _users.find(_.name == name).map(_.id)
-  }
 
-  def getChannelIdForName(name: String): Option[String] = {
+  def getChannelIdForName(name: String): Option[String] =
     _channels.find(_.name == name).map(_.id)
-  }
 
-  def getUserById(id: String): Option[User] = {
+  def getUserById(id: String): Option[User] =
     _users.find(_.id == id)
-  }
 
   // TODO: Add remaining update events
-  private[rtm] def update(event: SlackEvent) {
+  private[rtm] def update(event: SlackEvent) =
     event match {
-      case e: ChannelCreated =>
+      case e: ChannelCreated ⇒
         addReplaceChannel(e.channel)
-      case e: ChannelDeleted =>
+      case e: ChannelDeleted ⇒
         removeChannel(e.channel)
-      case e: ChannelRename =>
+      case e: ChannelRename ⇒
         addReplaceChannel(e.channel)
-      case e: ImCreated =>
+      case e: ImCreated ⇒
         addReplaceIm(e.channel)
-      case e: ImClose =>
+      case e: ImClose ⇒
         removeIm(e.channel)
-      case e: UserChange =>
+      case e: UserChange ⇒
         addReplaceUser(e.user)
-      case e: TeamJoin =>
+      case e: TeamJoin ⇒
         addReplaceUser(e.user)
-      case _ =>
+      case _ ⇒
     }
-  }
 
-  private[rtm] def reset(start: RtmStartState) {
+  private[rtm] def reset(start: RtmStartState) = {
     _self = start.self
     _team = start.team
     _users = start.users
@@ -70,30 +65,27 @@ class RtmState(start: RtmStartState) {
     _bots = start.bots
   }
 
-  private def addReplaceChannel(chan: Channel) {
+  private def addReplaceChannel(chan: Channel) = {
     removeChannel(chan.id)
     _channels :+= chan
   }
 
-  private def removeChannel(chanId: String) {
+  private def removeChannel(chanId: String) =
     _channels = _channels.filterNot(_.id == chanId)
-  }
 
-  private def addReplaceIm(im: Im) {
+  private def addReplaceIm(im: Im) = {
     removeIm(im.id)
     _ims :+= im
   }
 
-  private def removeIm(imId: String) {
+  private def removeIm(imId: String) =
     _ims = _ims.filterNot(_.id == imId)
-  }
 
-  private def addReplaceUser(user: User) {
+  private def addReplaceUser(user: User) = {
     removeUser(user.id)
     _users :+= user
   }
 
-  private def removeUser(userId: String) {
+  private def removeUser(userId: String) =
     _users = _users.filterNot(_.id == userId)
-  }
 }
